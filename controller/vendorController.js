@@ -26,8 +26,8 @@ async function sendAccessEmail(email, name, code) {
 
 exports.submitVendorRequest = async (req, res) => {
   try {
-    const { name, phone, email } = req.body;
-    const vendor = new VendorRequest({ name, phone, email, status: "pending" });
+    const { name, companyName, phone, email } = req.body;
+    const vendor = new VendorRequest({ name, companyName, phone, email, status: "pending" });
     await vendor.save();
     res.json({ message: "Request submitted. Waiting for admin approval." });
   } catch (error) {

@@ -41,6 +41,7 @@ exports.requestResume = async (req, res) => {
         success: true,
         vendor: {
           name: vendor.name,
+          companyName: vendor.companyName ?? null,
           phone: vendor.phone ?? null,
           email: vendor.email ?? null,
         },

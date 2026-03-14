@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const vendorRequestSchema = new mongoose.Schema({
   name: String,
+  companyName: String,
   phone: String,
   email: String,
   status: {
