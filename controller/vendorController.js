@@ -55,11 +55,24 @@ exports.approveVendor = async (req, res) => {
     vendor.accessCode = accessCode;
     await vendor.save();
 
-    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-      await sendAccessEmail(vendor.email, vendor.name, accessCode);
+    let emailSent = false;
+    if (vendor.email && process.env.SMTP_USER && process.env.SMTP_PASS) {
+      try {
+        await sendAccessEmail(vendor.email, vendor.name, accessCode);
+        emailSent = true;
+      } catch (emailErr) {
+        console.error("Approval email failed:", emailErr);
+      }
     }
 
-    res.json({ message: "Vendor approved and email sent" });
+    if (emailSent) {
+      res.json({ message: "Vendor approved and email sent", accessCode });
+    } else {
+      res.json({
+        message: "Vendor approved. Share this access code manually: " + accessCode,
+        accessCode,
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
