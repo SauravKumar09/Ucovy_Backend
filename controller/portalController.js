@@ -1,10 +1,12 @@
 const VendorRequest = require("../models/VendorRequest");
 const Job = require("../models/Job");
+const ResumeRequest = require("../models/ResumeRequest");
 
 /**
  * POST /api/portal/request-resume
  * Body: { jobId?, candidateId?, accessCode }
- * Validates vendor access code, then returns candidate/job details (name, phone, email, resumeUrl).
+ * Validates vendor access code, then optionally saves a resume request
+ * and returns candidate/job details (name, phone, email, resumeUrl).
  */
 exports.requestResume = async (req, res) => {
   try {
@@ -67,6 +69,20 @@ exports.requestResume = async (req, res) => {
       });
     }
 
+    // Save resume request record (for admin listing)
+    await ResumeRequest.create({
+      vendorName: vendor.name,
+      vendorCompanyName: vendor.companyName,
+      vendorPhone: vendor.phone,
+      vendorEmail: vendor.email,
+      accessCode: vendor.accessCode,
+      jobId: job._id,
+      candidateName: job.firstName,
+      candidatePhone: job.phone,
+      candidateEmail: job.email,
+      resumeUrl: job.resumeUrl,
+    });
+
     res.json({
       success: true,
       candidate: {
@@ -88,3 +104,32 @@ exports.requestResume = async (req, res) => {
     });
   }
 };
+
+/**
+ * GET /api/portal/resume-requests
+ * Returns list of all resume requests with vendor + candidate info.
+ */
+exports.getResumeRequests = async (req, res) => {
+  try {
+    const requests = await ResumeRequest.find().sort({ createdAt: -1 }).lean();
+    res.json(
+      requests.map((r) => ({
+        _id: r._id,
+        vendorName: r.vendorName,
+        vendorCompanyName: r.vendorCompanyName,
+        vendorPhone: r.vendorPhone,
+        vendorEmail: r.vendorEmail,
+        accessCode: r.accessCode,
+        candidateName: r.candidateName,
+        candidatePhone: r.candidatePhone,
+        candidateEmail: r.candidateEmail,
+        resumeUrl: r.resumeUrl,
+        createdAt: r.createdAt,
+      }))
+    );
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message || "Failed to load resume requests." });
+  }
+};
+
