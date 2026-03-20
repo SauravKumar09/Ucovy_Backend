@@ -1,47 +1,48 @@
-const CEIPAL_JOBS_URL = "https://api.ceipal.com/jobs";
+const buildQueryString = (reqQuery) => {
+  const qs = new URLSearchParams();
+  const query = reqQuery || {};
 
-const getJobsArrayFromResponse = (data) => {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.jobs)) return data.jobs;
-  if (Array.isArray(data?.data)) return data.data;
-  if (Array.isArray(data?.results)) return data.results;
-  return null;
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null) continue;
+    if (Array.isArray(value)) {
+      value.forEach((v) => qs.append(key, String(v)));
+    } else {
+      qs.set(key, String(value));
+    }
+  }
+
+  const qsString = qs.toString();
+  return qsString ? `?${qsString}` : "";
 };
 
 exports.getRecentOpenings = async (req, res) => {
   try {
     const apiKey = process.env.CEIPAL_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ message: "Missing CEIPAL_API_KEY in backend .env" });
+      return res.status(500).json({ message: "CEIPAL_API_KEY is not set in backend .env" });
     }
 
-    const limitRaw = req.query?.limit;
-    const limit = limitRaw !== undefined && limitRaw !== "" ? Number(limitRaw) : null;
-    if (limit !== null && Number.isNaN(limit)) {
-      return res.status(400).json({ message: "Invalid query param: limit" });
-    }
+    const baseUrl = "https://api.ceipal.com/jobs";
+    const url = `${baseUrl}${buildQueryString(req.query)}`;
 
-    const ceipalResponse = await fetch(CEIPAL_JOBS_URL, {
+    const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
     });
 
-    const contentType = ceipalResponse.headers.get("content-type") || "";
-    const isJson = contentType.includes("application/json");
-    const payload = isJson ? await ceipalResponse.json() : { message: await ceipalResponse.text() };
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      return res.status(response.status).json({
+        message: "Failed to fetch jobs from Ceipal",
+        details: text || undefined,
+      });
+    }
 
-    const jobs = getJobsArrayFromResponse(payload) ?? payload;
-    const jobsLimited = Array.isArray(jobs) && limit ? jobs.slice(0, limit) : jobs;
-
-    // Keep the response shape consistent for the frontend.
-    return res.status(ceipalResponse.status).json({
-      source: "ceipal",
-      jobs: jobsLimited,
-      raw: isJson ? payload : undefined,
-    });
+    const data = await response.json();
+    res.json(data);
   } catch (error) {
-    return res.status(500).json({ message: "Failed to fetch CEIPAL jobs", error: error.message });
+    res.status(500).json({ message: "Ceipal request failed", error: error.message });
   }
 };
 

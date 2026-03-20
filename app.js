@@ -42,8 +42,8 @@ app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/careers", careerRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/jobs", jobRoutes);
-app.use("/api/portal", portalRoutes);
 app.use("/api/ceipal", ceipalRoutes);
+app.use("/api/portal", portalRoutes);
 app.use("/api", vendorRoutes);
 
 module.exports = app;
