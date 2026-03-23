@@ -18,7 +18,10 @@ const buildQueryString = (reqQuery) => {
 exports.getRecentOpenings = async (req, res) => {
   try {
     const apiKey = process.env.CEIPAL_API_KEY;
-    const portalId = process.env.CEIPAL_PORTAL_ID || req.query.portal_id;
+    const portalId =
+      process.env.CEIPAL_PORTAL_ID ||
+      process.env.CEIPAL_CAREER_PORTAL_ID ||
+      req.query.portal_id;
 
     if (!apiKey) {
       return res.status(500).json({ message: "CEIPAL_API_KEY is not set in backend .env" });
@@ -27,7 +30,7 @@ exports.getRecentOpenings = async (req, res) => {
     if (!portalId) {
       return res.status(500).json({
         message:
-          "CEIPAL_PORTAL_ID is not set. Add CEIPAL_PORTAL_ID in backend .env or pass portal_id query param.",
+          "Portal ID is not set. Add CEIPAL_PORTAL_ID (or CEIPAL_CAREER_PORTAL_ID) in backend .env or pass portal_id query param.",
       });
     }
 
