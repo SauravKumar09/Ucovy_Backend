@@ -103,6 +103,11 @@ const fetchJobDetails = async ({ portalId, jobDetailsId, paging_length, paging_n
     }
 
     const mapped = mapCeipalJobDetails(retry.data);
+    if (!Array.isArray(mapped) || mapped.length === 0) {
+      const err = new Error("Ceipal job details response did not contain expected fields.");
+      err.status = 502;
+      throw err;
+    }
     return mapped;
   }
 
@@ -118,12 +123,10 @@ const fetchJobDetails = async ({ portalId, jobDetailsId, paging_length, paging_n
   }
 
   const mapped = mapCeipalJobDetails(response.data);
-
-  // Invalid response handling
-  const requiredKeys = ["job_code", "job_title", "job_description"];
-  const ok = requiredKeys.some((k) => mapped[k] !== undefined && mapped[k] !== null && mapped[k] !== "");
-  if (!ok) {
-    throw new Error("Ceipal job details response did not contain expected fields.");
+  if (!Array.isArray(mapped) || mapped.length === 0) {
+    const err = new Error("Ceipal job details response did not contain expected fields.");
+    err.status = 502;
+    throw err;
   }
 
   return mapped;
