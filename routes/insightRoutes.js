@@ -1,5 +1,6 @@
 const express = require("express");
 const Insight = require("../models/Insight");
+const upload = require("../middleware/uploadMiddleware");
 
 const router = express.Router();
 
@@ -13,8 +14,8 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Add insight (admin)
-router.post("/", async (req, res) => {
+// Add insight (admin) - supports multipart image upload
+router.post("/", upload.single("image"), async (req, res) => {
   try {
     const { title, description, image = "", tag = "", date = "" } = req.body || {};
 
@@ -25,7 +26,8 @@ router.post("/", async (req, res) => {
     const newInsight = new Insight({
       title: String(title).trim(),
       description: String(description).trim(),
-      image: String(image || "").trim(),
+      // Prefer uploaded file; keep URL fallback for backward compatibility.
+      image: req.file ? req.file.filename : String(image || "").trim(),
       tag: String(tag || "").trim(),
       date: String(date || "").trim(),
     });
