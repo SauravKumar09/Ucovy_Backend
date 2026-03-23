@@ -19,7 +19,7 @@ const getEnv = (name, fallbackName) => {
 module.exports = {
   ...CEIPAL,
   env: {
-    email: getEnv("CEIPAL_EMAIL", "CEIPAL_USERNAME"),
+    email: process.env.CEIPAL_EMAIL,
     password: process.env.CEIPAL_PASSWORD,
     apiKey: process.env.CEIPAL_API_KEY,
     careerPortalId: getEnv("CEIPAL_CAREER_PORTAL_ID", "CEIPAL_PORTAL_ID") || process.env.CEIPAL_PORTAL_ID,
