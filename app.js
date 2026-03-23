@@ -9,6 +9,8 @@ const vendorRoutes = require("./routes/vendorRoutes");
 const jobRoutes = require("./routes/jobRoutes");
 const portalRoutes = require("./routes/portalRoutes");
 const ceipalRoutes = require("./routes/ceipalRoutes");
+const insightRoutes = require("./routes/insightRoutes");
+const insightListRoutes = require("./routes/insightListRoutes");
 
 const app = express();
 
@@ -44,6 +46,8 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/ceipal", ceipalRoutes);
 app.use("/api/portal", portalRoutes);
+app.use("/api/insights", insightRoutes);
+app.use("/api/insight-list", insightListRoutes);
 app.use("/api", vendorRoutes);
 
 module.exports = app;
