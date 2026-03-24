@@ -14,6 +14,7 @@ const insightRoutes = require("./routes/insightRoutes");
 const insightListRoutes = require("./routes/insightListRoutes");
 const blogRoutes = require("./routes/blogRoutes");
 const jobApplicationRoutes = require("./routes/jobApplicationRoutes");
+const uploadRoute = require("./routes/uploadRoute");
 
 const app = express();
 
@@ -52,6 +53,7 @@ app.use("/api/insights", insightRoutes);
 app.use("/api/insight-list", insightListRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/job-applications", jobApplicationRoutes);
+app.use("/api/upload", uploadRoute);
 app.use("/api", vendorRoutes);
 
 module.exports = app;
