@@ -7,5 +7,6 @@ const upload = require("../middleware/uploadMiddleware");
 router.post("/add", upload.single("logo"), brandController.addBrand);
 
 router.get("/", brandController.getBrands);
+router.delete("/:id", brandController.deleteBrand);
 
 module.exports = router;

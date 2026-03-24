@@ -36,6 +36,25 @@ router.post("/", async (req, res) => {
   }
 });
 
+// Update blog
+router.put("/:id", async (req, res) => {
+  try {
+    const { title, description, date, link } = req.body || {};
+    const update = {};
+
+    if (typeof title !== "undefined") update.title = String(title || "").trim();
+    if (typeof description !== "undefined") update.description = String(description || "").trim();
+    if (typeof date !== "undefined") update.date = String(date || "").trim();
+    if (typeof link !== "undefined") update.link = String(link || "").trim();
+
+    const updated = await Blog.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!updated) return res.status(404).json({ message: "Blog not found" });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update blog", error: error.message });
+  }
+});
+
 // Delete blog
 router.delete("/:id", async (req, res) => {
   try {

@@ -24,9 +24,20 @@ exports.addBrand = async (req, res) => {
 };
 
 exports.getBrands = async (req, res) => {
+  try {
+    const brands = await Brand.find();
+    res.json(brands);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch brands", error: error.message });
+  }
+};
 
-  const brands = await Brand.find();
-
-  res.json(brands);
-
+exports.deleteBrand = async (req, res) => {
+  try {
+    const deleted = await Brand.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Brand not found" });
+    res.json({ message: "Brand deleted" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to delete brand", error: error.message });
+  }
 };
