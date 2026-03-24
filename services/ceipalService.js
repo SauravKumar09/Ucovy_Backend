@@ -5,10 +5,29 @@ const { mapCeipalJobDetails } = require("../utils/ceipalJobMapper");
 
 let cachedAccessToken = null;
 let cachedAccessTokenExpiresAt = 0;
+const CEIPAL_TIMEOUT_MS = 60000;
+const CEIPAL_RETRY_COUNT = 2;
 
 // Optional: basic in-memory job data caching
 // key -> { expiresAt, data }
 const jobCache = new Map();
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isRetryableNetworkError = (error) => {
+  const code = error?.code;
+  return code === "ECONNABORTED" || code === "ETIMEDOUT" || code === "ECONNRESET" || code === "ENOTFOUND";
+};
+
+const withRetry = async (fn, retries = CEIPAL_RETRY_COUNT) => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries <= 0 || !isRetryableNetworkError(error)) throw error;
+    await wait(500);
+    return withRetry(fn, retries - 1);
+  }
+};
 
 const getToken = async () => {
   const now = Date.now();
@@ -24,19 +43,21 @@ const getToken = async () => {
 
   const authUrl = `${CEIPAL_CONFIG.baseApiUrl}${CEIPAL_CONFIG.authPath}`;
 
-  const res = await axios.post(
-    authUrl,
-    {
-      email,
-      password,
-      api_key: apiKey,
-      json: 1,
-    },
-    {
-      headers: { "Content-Type": "application/json" },
-      timeout: 30000,
-      validateStatus: () => true, // handle errors ourselves
-    }
+  const res = await withRetry(() =>
+    axios.post(
+      authUrl,
+      {
+        email,
+        password,
+        api_key: apiKey,
+        json: 1,
+      },
+      {
+        headers: { "Content-Type": "application/json" },
+        timeout: CEIPAL_TIMEOUT_MS,
+        validateStatus: () => true, // handle errors ourselves
+      }
+    )
   );
 
   if (res.status !== 200 && res.status !== 201) {
@@ -69,14 +90,16 @@ const fetchJobDetails = async ({ portalId, jobDetailsId, paging_length, paging_n
     ...(paging_number ? { paging_number } : {}),
   };
 
-  const response = await axios.get(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    params,
-    timeout: 30000,
-    validateStatus: () => true, // handle errors ourselves
-  });
+  const response = await withRetry(() =>
+    axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      params,
+      timeout: CEIPAL_TIMEOUT_MS,
+      validateStatus: () => true, // handle errors ourselves
+    })
+  );
 
   // Handle token expired -> regenerate
   if (response.status === 401) {
@@ -85,12 +108,14 @@ const fetchJobDetails = async ({ portalId, jobDetailsId, paging_length, paging_n
     cachedAccessTokenExpiresAt = 0;
 
     const newToken = await getToken();
-    const retry = await axios.get(url, {
-      headers: { Authorization: `Bearer ${newToken}` },
-      params,
-      timeout: 30000,
-      validateStatus: () => true,
-    });
+    const retry = await withRetry(() =>
+      axios.get(url, {
+        headers: { Authorization: `Bearer ${newToken}` },
+        params,
+        timeout: CEIPAL_TIMEOUT_MS,
+        validateStatus: () => true,
+      })
+    );
 
     if (retry.status !== 200) {
       const details =
@@ -133,6 +158,7 @@ const fetchJobDetails = async ({ portalId, jobDetailsId, paging_length, paging_n
 };
 
 exports.getJobs = async (req) => {
+  try {
   const portalId = req.query.portal_id || CEIPAL_CONFIG.env.careerPortalId;
   const jobDetailsId = req.query.custom_job_id || CEIPAL_CONFIG.env.customJobDetailsId;
 
@@ -165,5 +191,13 @@ exports.getJobs = async (req) => {
 
   jobCache.set(cacheKey, { data, expiresAt: now + CEIPAL_CONFIG.jobCacheTtlMs });
   return data;
+  } catch (error) {
+    if (isRetryableNetworkError(error)) {
+      const timeoutErr = new Error("Ceipal API timeout, please try again.");
+      timeoutErr.status = 504;
+      throw timeoutErr;
+    }
+    throw error;
+  }
 };
 
