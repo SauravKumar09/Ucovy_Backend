@@ -24,6 +24,7 @@ const allowedOrigins = [
   "http://localhost:3000",
   "https://ucovy.netlify.app",
   "https://ucovy-admin.netlify.app",
+  "https://ucovy-website.netlify.app"
 ];
 app.use(
   cors({
