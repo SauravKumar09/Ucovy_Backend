@@ -38,23 +38,41 @@ app.use(
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-app.use("/api/auth", authRoutes);
-app.use("/api/hero", require("./routes/heroRoutes"));
-app.use("/api/stats", require("./routes/statRoutes"));
-app.use("/api/brands", require("./routes/brandRoutes"));
-app.use("/api/timeline", require("./routes/timelineRoutes"));
-app.use("/api/principles", require("./routes/principlesRoutes"));
-app.use("/api/testimonials", testimonialRoutes);
-app.use("/api/careers", careerRoutes);
-app.use("/api/contact", contactRoutes);
-app.use("/api/jobs", jobRoutes);
-app.use("/api/ceipal", ceipalRoutes);
-app.use("/api/portal", portalRoutes);
-app.use("/api/insights", insightRoutes);
-app.use("/api/insight-list", insightListRoutes);
-app.use("/api/blogs", blogRoutes);
-app.use("/api/job-applications", jobApplicationRoutes);
-app.use("/api/upload", uploadRoute);
+const mountRoutes = (apiPath, aliasPath, router) => {
+  app.use(`/api${apiPath}`, router);
+  app.use(aliasPath, router);
+};
+
+mountRoutes("/auth", "/auth", authRoutes);
+mountRoutes("/hero", "/hero", require("./routes/heroRoutes"));
+mountRoutes("/stats", "/stats", require("./routes/statRoutes"));
+mountRoutes("/brands", "/brands", require("./routes/brandRoutes"));
+mountRoutes("/timeline", "/timeline", require("./routes/timelineRoutes"));
+mountRoutes("/principles", "/principles", require("./routes/principlesRoutes"));
+mountRoutes("/testimonials", "/testimonials", testimonialRoutes);
+mountRoutes("/careers", "/careers", careerRoutes);
+mountRoutes("/contact", "/contact", contactRoutes);
+mountRoutes("/jobs", "/jobs", jobRoutes);
+mountRoutes("/ceipal", "/ceipal", ceipalRoutes);
+mountRoutes("/portal", "/portal", portalRoutes);
+mountRoutes("/insights", "/insights", insightRoutes);
+mountRoutes("/insight-list", "/insight-list", insightListRoutes);
+mountRoutes("/blogs", "/blogs", blogRoutes);
+mountRoutes("/job-applications", "/job-applications", jobApplicationRoutes);
+mountRoutes("/upload", "/upload", uploadRoute);
+
 app.use("/api", vendorRoutes);
+app.use("/", vendorRoutes);
+
+app.get("/api/health", (req, res) => {
+  res.json({ success: true, message: "API is running" });
+});
+
+app.use("/api/*splat", (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Cannot ${req.method} ${req.originalUrl}`,
+  });
+});
 
 module.exports = app;
